@@ -196,7 +196,7 @@ flagged).
 pip install javalang
 
 # first-time only: rebuild the demo git baseline
-python setup_demo.py
+run setup.sh
 
 # analyze the demo change
 python cli.py --repo demo-repo --pr "PR #1842" --json my-report.json

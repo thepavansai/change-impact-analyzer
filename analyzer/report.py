@@ -1,18 +1,23 @@
 """Report rendering: human-readable terminal report + JSON + explanation.
 
-The `explain()` function is deliberately isolated. In the PoC it uses a
-deterministic template that narrates the FACTS the graph produced. In the real
-product this is the single seam where an LLM is plugged in:
+The `explain()` function is deliberately isolated. It narrates the FACTS the
+graph produced and nothing else. Two implementations back it:
 
-    prompt = build_prompt(changes, affected, risk)   # facts from the graph
-    text   = llm.complete(prompt)                     # LLM only *explains*
+  - llm.explain_with_llm()   real LLM call — Anthropic, any OpenAI-compatible
+                              provider, or local Ollama (see analyzer/llm.py
+                              for which env vars select which provider)
+  - _template_explain()      deterministic fallback, used when no provider is
+                              configured or the API call fails for any reason
 
 Per the core product principle: deterministic analysis understands the system,
-the LLM only reasons about and communicates the consequences.
+the LLM only reasons about and communicates the consequences. Note that
+callers of explain() (report.py's own functions, cli.py) never need to know
+which path was taken — the signature and return type are identical either way.
 """
 from __future__ import annotations
 
 import json
+import sys
 from typing import Dict, List, Tuple
 
 from .diff import ChangedSymbol
@@ -33,9 +38,30 @@ LEVEL_COLOR = {"HIGH": RED, "MEDIUM": YEL, "LOW": GRN}
 def explain(changes: List[ChangedSymbol],
             affected: Dict[str, AffectedComponent],
             risk: RiskResult) -> str:
-    """Template-based narrator (LLM seam). Turns graph facts into prose."""
+    """The LLM seam. Tries a real LLM call if any provider is configured
+    (see analyzer/llm.py::is_configured); falls back to the deterministic
+    template on any failure (no provider set, network error, bad response).
+    Callers never see the difference in the return type — just prose
+    either way."""
     if not changes:
         return "No symbol-level changes were detected."
+
+    from . import llm
+    if llm.is_configured():
+        try:
+            return llm.explain_with_llm(changes, affected, risk)
+        except llm.LLMUnavailable as e:
+            print(f"[explain] LLM call failed, using template fallback: {e}",
+                  file=sys.stderr)
+
+    return _template_explain(changes, affected, risk)
+
+
+def _template_explain(changes: List[ChangedSymbol],
+                       affected: Dict[str, AffectedComponent],
+                       risk: RiskResult) -> str:
+    """Deterministic narrator — the original PoC behavior, kept as the
+    zero-dependency, no-API-key-required fallback."""
 
     prod = {k: v for k, v in affected.items() if not v.is_test}
     change_desc = "; ".join(c.label() for c in changes[:4])

@@ -136,6 +136,54 @@ Reviewers can always see *why* the number is what it is.
 
 ---
 
+## Real LLM explanations
+
+[#real-llm-explanations](#real-llm-explanations)
+
+By default `explain()` (in `analyzer/report.py`) uses a deterministic
+template — no API key, no network call, fully reproducible. Set one of the
+following environment variables and it transparently switches to a real LLM
+call instead, via `analyzer/llm.py`. Nothing else in the pipeline changes:
+the LLM only ever receives the JSON facts the graph already computed
+(changed symbols, affected components, risk breakdown) — never source code
+— and any failure (missing key, network error, bad response) falls back to
+the template automatically.
+
+| Provider | Env vars | Notes |
+| --- | --- | --- |
+| **Anthropic** | `ANTHROPIC_API_KEY` | Model: `CIA_LLM_MODEL` (default `claude-haiku-4-5-20251001`) |
+| **OpenAI-compatible** | `OPENAI_API_KEY` or `LLM_API_KEY`, optional `LLM_BASE_URL`, optional `LLM_PROVIDER` | Covers OpenAI, Groq, Together, Mistral, DeepSeek, OpenRouter, xAI, Azure OpenAI, or any other `/chat/completions`-compatible endpoint. `LLM_PROVIDER` (e.g. `groq`, `mistral`) just picks sane defaults for base URL + model; override either explicitly. |
+| **Ollama (local)** | `LLM_PROVIDER=ollama` or `OLLAMA_HOST` | No API key needed. `OLLAMA_HOST` defaults to `http://localhost:11434`. Model: `CIA_LLM_MODEL` (default `llama3.2`) |
+
+Example — Anthropic:
+
+```
+export ANTHROPIC_API_KEY=sk-ant-...
+python cli.py --repo demo-repo --pr "PR #1842" --json impact-report.json
+```
+
+Example — Groq (OpenAI-compatible):
+
+```
+export LLM_PROVIDER=groq
+export LLM_API_KEY=gsk_...
+python cli.py --repo demo-repo --pr "PR #1842"
+```
+
+Example — local Ollama:
+
+```
+ollama pull llama3.2
+export LLM_PROVIDER=ollama
+python cli.py --repo demo-repo --pr "PR #1842"
+```
+
+If more than one provider's env vars are set, priority is Anthropic →
+OpenAI-compatible → Ollama. Zero extra pip dependencies — provider calls use
+only `urllib` from the standard library.
+
+---
+
 ## Honest limitations (this is a PoC)
 
 - **Heuristic type resolution**, not full Java type inference. Handles the
@@ -144,9 +192,10 @@ Reviewers can always see *why* the number is what it is.
 - **Single project scope** — no cross-repo / external-artifact resolution.
 - **Test mapping is static** (who references whom). Real coverage data
   (JaCoCo) would make it exact.
-- **The "AI explanation" is a template** here so the PoC runs with no API key.
-  It consumes only graph facts — swap `explain()` for a real LLM call and
-  nothing else changes.
+- **The "AI explanation" defaults to a deterministic template** so the PoC
+  runs with no API key. Set any supported provider's env var to switch to a
+  real LLM call instead — see "Real LLM explanations" below. Either way, the
+  model only ever sees graph facts, never source code.
 
 ---
 

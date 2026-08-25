@@ -1,1 +1,4 @@
 javalang==0.13.0
+
+# Real LLM explanations (analyzer/llm.py) use only the Python standard
+# library (urllib) — no anthropic SDK needed. Just set ANTHROPIC_API_KEY.
