@@ -211,7 +211,7 @@ only `urllib` from the standard library.
 
 ## Natural next steps
 
-- Swap the template narrator for a real LLM (the `explain()` seam).
+- ~~Swap the template narrator for a real LLM (the `explain()` seam).~~
 - Add GitHub PR ingestion (Octokit / REST) so it runs in CI on every PR.
 - Integrate JaCoCo coverage to make test mapping exact.
 - Add a second language, then a web UI showing the graph.
