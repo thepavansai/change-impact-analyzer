@@ -108,10 +108,11 @@ change-impact-analyzer/
 ├── analyzer/
 │   ├── model.py           # SystemModel: classes, members, edges
 │   ├── parser.py          # javalang AST -> symbols + dependency edges
-│   ├── diff.py            # semantic changed-symbol detection (old vs new)
-│   ├── impact.py          # reverse BFS traversal + test recommendation
-│   ├── risk.py            # transparent weighted risk score
-│   └── report.py          # terminal + JSON report, LLM explanation seam
+│   ├── diff.py             # semantic changed-symbol detection (old vs new)
+│   ├── impact.py           # reverse BFS traversal + test recommendation
+│   ├── risk.py              # transparent weighted risk score
+│   ├── llm.py              # multi-provider LLM seam (Anthropic/OpenAI-compat/Ollama)
+│   └── report.py          # terminal + JSON report, calls explain()
 └── demo-repo/             # sample Java project (git repo with baseline)
 ```
 
@@ -138,7 +139,7 @@ Reviewers can always see *why* the number is what it is.
 
 ## Real LLM explanations
 
-[#real-llm-explanations](#real-llm-explanations)
+
 
 By default `explain()` (in `analyzer/report.py`) uses a deterministic
 template — no API key, no network call, fully reproducible. Set one of the
@@ -194,7 +195,7 @@ only `urllib` from the standard library.
   (JaCoCo) would make it exact.
 - **The "AI explanation" defaults to a deterministic template** so the PoC
   runs with no API key. Set any supported provider's env var to switch to a
-  real LLM call instead — see "Real LLM explanations" below. Either way, the
+  real LLM call instead — see "Real LLM explanations" above. Either way, the
   model only ever sees graph facts, never source code.
 
 ---
