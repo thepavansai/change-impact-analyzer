@@ -3,14 +3,14 @@ package com.shop.model;
 import java.util.Optional;
 
 public class Customer {
-    private String email;
+    private Optional<String> email;
     private String name;
 
-    public String getEmail() {
+    public Optional<String> getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {
+    public void setEmail(Optional<String> email) {
         this.email = email;
     }
 
