@@ -1,4 +1,3 @@
-cat > .gitignore << 'EOF'
 __pycache__/
 *.pyc
 *.pyo
@@ -9,4 +8,3 @@ impact-report.json
 *.report.json
 .DS_Store
 demo-repo/.git/
-EOF
