@@ -1,0 +1,116 @@
+{
+  "pull_request": "PR #1842",
+  "risk": {
+    "score": 82,
+    "level": "HIGH",
+    "breakdown": [
+      {
+        "signal": "blast_radius",
+        "normalized": 1.0,
+        "points": 25.0
+      },
+      {
+        "signal": "depth",
+        "normalized": 0.5,
+        "points": 7.5
+      },
+      {
+        "signal": "fan_out",
+        "normalized": 1.0,
+        "points": 15.0
+      },
+      {
+        "signal": "api_exposure",
+        "normalized": 1.0,
+        "points": 20.0
+      },
+      {
+        "signal": "test_gap",
+        "normalized": 0.0,
+        "points": 0.0
+      },
+      {
+        "signal": "type_change",
+        "normalized": 1.0,
+        "points": 15.0
+      }
+    ]
+  },
+  "changes": [
+    "field Customer.email : String -> Optional<String>",
+    "method Customer.getEmail : String () -> Optional<String> ()",
+    "method Customer.setEmail : void (String) -> void (Optional<String>)"
+  ],
+  "affected_components": [
+    {
+      "class": "BillingService",
+      "depth": 1,
+      "is_api": false,
+      "reasons": [
+        "BillingService calls Customer.getEmail()",
+        "BillingService calls InvoiceService.generateInvoice()"
+      ]
+    },
+    {
+      "class": "CustomerApi",
+      "depth": 1,
+      "is_api": true,
+      "reasons": [
+        "CustomerApi calls Customer.getEmail()",
+        "CustomerApi calls CustomerService.findCustomer()"
+      ]
+    },
+    {
+      "class": "CustomerService",
+      "depth": 1,
+      "is_api": false,
+      "reasons": [
+        "CustomerService calls Customer.setEmail()",
+        "CustomerService calls Customer.getEmail()"
+      ]
+    },
+    {
+      "class": "InvoiceService",
+      "depth": 1,
+      "is_api": false,
+      "reasons": [
+        "InvoiceService calls Customer.getEmail()"
+      ]
+    },
+    {
+      "class": "NotificationService",
+      "depth": 1,
+      "is_api": false,
+      "reasons": [
+        "NotificationService calls Customer.getEmail()"
+      ]
+    },
+    {
+      "class": "OrderProcessor",
+      "depth": 2,
+      "is_api": false,
+      "reasons": [
+        "OrderProcessor calls BillingService.charge()"
+      ]
+    }
+  ],
+  "recommended_tests": [
+    {
+      "test": "CustomerApiTest",
+      "why": "exercises CustomerApi"
+    },
+    {
+      "test": "CustomerSerializationTest",
+      "why": "exercises Customer"
+    },
+    {
+      "test": "EmailNotificationTest",
+      "why": "exercises Customer, NotificationService"
+    },
+    {
+      "test": "InvoiceGenerationTest",
+      "why": "exercises Customer, InvoiceService"
+    }
+  ],
+  "explanation": "This change modifies field Customer.email : String -> Optional<String>; method Customer.getEmail : String () -> Optional<String> (); method Customer.setEmail : void (String) -> void (Optional<String>). Deterministic dependency analysis found 6 production components that depend on the changed symbol. Direct consumers (BillingService, CustomerApi, CustomerService, InvoiceService, NotificationService) use the symbol immediately and may assume its previous type/behaviour. A public API boundary (CustomerApi) is affected, so the external response contract may change \u2014 this makes the change potentially backward-incompatible. Overall risk is HIGH (82/100), driven mainly by blast radius, api exposure."
+}
